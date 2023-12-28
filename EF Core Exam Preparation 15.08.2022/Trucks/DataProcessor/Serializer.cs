@@ -11,19 +11,25 @@
     {
         public static string ExportDespatchersWithTheirTrucks(TrucksContext context)
         {
+            //using Data Transfer Object Class to map it with despatchers
             XmlSerializer serializer = new XmlSerializer(typeof(ExportDespatchersDTO[]), new XmlRootAttribute("Despatchers"));
 
+            //using StringBuilder to gather all info in one string
             StringBuilder sb = new StringBuilder();
 
+            //"using" automatically closes opened connections
             using var writer = new StringWriter(sb);
 
             var xns = new XmlSerializerNamespaces();
+
+            //one way to display empty namespace in resulted file
             xns.Add(string.Empty, string.Empty);
 
             var despatchersAndTrucks = context.Despatchers
                 .Where(d => d.Trucks.Any())
                 .Select(d => new ExportDespatchersDTO
                 {
+                    //using identical properties in order to map successfully
                     TrucksCount = d.Trucks.Count,
                     Name = d.Name,
                     Trucks = d.Trucks
@@ -39,14 +45,20 @@
                 .ThenBy(d => d.Name)
                 .ToArray();
 
+            //Serialize method needs file, TextReader object and namespace to convert/map
             serializer.Serialize(writer, despatchersAndTrucks, xns);
+
+            //explicitly closing connection in terms of reaching edge cases
             writer.Close();
 
-            return sb.ToString();
+            //using TrimEnd() to get rid of white spaces
+            return sb.ToString().TrimEnd();
         }
 
         public static string ExportClientsWithMostTrucks(TrucksContext context, int capacity)
         {
+            //turning needed info about products into a collection using anonymous object
+            //using less data
             var clientsAndTrucks = context.Clients
                 .Include(c => c.ClientsTrucks)
                 .ThenInclude(ct => ct.Truck)
@@ -74,6 +86,8 @@
                 .ThenBy(c => c.Name)
                 .Take(10);
 
+            //Serialize method needs object to convert/map
+	        //adding Formatting for better reading
             return JsonConvert.SerializeObject(clientsAndTrucks, Formatting.Indented);
         }
     }
