@@ -21,37 +21,49 @@
 
         public static string ImportDespatcher(TrucksContext context, string xmlString)
         {
+            //using Data Transfer Object Class to map it with Despatchers
             var serializer = new XmlSerializer(typeof(ImportDespatchersDTO[]), new XmlRootAttribute("Despatchers"));
+
+            //Deserialize method needs TextReader object to convert/map 
             using StringReader inputReader = new StringReader(xmlString);
             var despatchersArrayDTOs = (ImportDespatchersDTO[])serializer.Deserialize(inputReader);
 
+            //using StringBuilder to gather all info in one string
             StringBuilder sb = new StringBuilder();
+
+            //creating List where all valid despatchers can be kept
             List<Despatcher> despatchersXML = new List<Despatcher>();
 
             foreach (ImportDespatchersDTO despatcherDTO in despatchersArrayDTOs)
             {
-                Despatcher despatcherrToAdd = new Despatcher
-                {
-                    Name = despatcherDTO.Name,
-                    Position = despatcherDTO.Position,
-                };
-
+                //validating info for despatcher from data
                 if (!IsValid(despatcherDTO))
                 {
                     sb.AppendLine(ErrorMessage);
                     continue;
                 }
 
+                //creating a valid despatcher
+                Despatcher despatcherrToAdd = new Despatcher
+                {
+                    //using identical properties in order to map successfully
+                    Name = despatcherDTO.Name,
+                    Position = despatcherDTO.Position,
+                };
+
                 foreach (var truckDTO in despatcherDTO.Trucks)
                 {
+                    //validating info for truck from data
                     if (!IsValid(truckDTO))
                     {
                         sb.AppendLine(ErrorMessage);
                         continue;
                     }
 
+                    //adding valid truck
                     despatcherrToAdd.Trucks.Add(new Truck()
                     {
+                        //using identical properties in order to map successfully
                         RegistrationNumber = truckDTO.RegistrationNumber,
                         VinNumber = truckDTO.VinNumber,
                         TankCapacity = truckDTO.TankCapacity,
@@ -69,24 +81,31 @@
 
             context.Despatchers.AddRange(despatchersXML);
 
+            //actual importing info from data
             context.SaveChanges();
 
+            //using TrimEnd() to get rid of white spaces
             return sb.ToString().TrimEnd();
         }
         public static string ImportClient(TrucksContext context, string jsonString)
         {
+            //using Data Transfer Object Class to map it with clients
             var clientsArray = JsonConvert.DeserializeObject<ImportClientsDTO[]>(jsonString);
 
+            //using StringBuilder to gather all info in one string
             StringBuilder sb = new StringBuilder();
+
+            //creating List where all valid clients can be kept
             List<Client> clientsList = new List<Client>();
 
+            //taking only unique trucks
             var existingTrucksIds = context.Trucks
                 .Select(tr => tr.Id)
                 .ToArray();
 
             foreach (ImportClientsDTO clientDTO in clientsArray)
             {
-
+                //validating info for client from data
                 if (!IsValid(clientDTO))
                 {
                     sb.AppendLine(ErrorMessage);
@@ -99,8 +118,10 @@
                     continue;
                 }
 
+                //creating a valid client
                 Client clientToAdd = new Client()
                 {
+                    //using identical properties in order to map successfully
                     Name = clientDTO.Name,
                     Nationality = clientDTO.Nationality,
                     Type = clientDTO.Type
@@ -108,15 +129,17 @@
 
                 foreach (int truckId in clientDTO.ClientsTrucks.Distinct()) // 4, 17, 98
                 {
+                    //validating only unique trucks
                     if (!existingTrucksIds.Contains(truckId))
                     {
                         sb.AppendLine(ErrorMessage);
                         continue;
                     }
 
+                    //adding valid ClientTruck
                     clientToAdd.ClientsTrucks.Add(new ClientTruck()
                     {
-                        Client = clientToAdd,// !!!!!!!!!!!
+                        Client = clientToAdd,
                         TruckId = truckId
                     });
 
@@ -127,8 +150,11 @@
             }
 
             context.AddRange(clientsList);
+
+            //actual importing info from data
             context.SaveChanges();
 
+            //using TrimEnd() to get rid of white spaces
             return sb.ToString().TrimEnd();
         }
 
