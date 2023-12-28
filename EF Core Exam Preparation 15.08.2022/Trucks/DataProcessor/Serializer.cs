@@ -57,7 +57,7 @@
 
         public static string ExportClientsWithMostTrucks(TrucksContext context, int capacity)
         {
-            //turning needed info about products into a collection using anonymous object
+            //turning needed info about clients into a collection using anonymous object
             //using less data
             var clientsAndTrucks = context.Clients
                 .Include(c => c.ClientsTrucks)
